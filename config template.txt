@@ -1,0 +1,23 @@
+[Pushbullet]
+websocket_url = xxx
+
+[OWM]
+token = xxx
+lat = 0.0
+lon = 0.0
+
+[Spotify]
+client_id = xxx
+client_secret = xxx
+redirect_uri = xxx
+
+[Notion]
+token_v2 = xxx
+source = xxx
+
+[Notion_V2]
+token = xxx
+databaseID = xxx
+
+[Youtube]
+key = xxx
