@@ -1,7 +1,21 @@
 import queue
-import sys, os, time, copy, inspect
+import math, sys, os, time, copy, inspect
 from InputStatus import InputStatusEnum
-from gpiozero import Button, RotaryEncoder
+try:
+    from gpiozero import Button, RotaryEncoder
+except:
+    class Button:
+        def __init__(self, num, pull_up=False):
+            self.num = num
+            self.pull_up = pull_up
+            self.when_pressed = lambda : None
+            self.when_pressed = lambda : None
+    class RotaryEncoder:
+        def __init__(self, encoding1, encoding2):
+            self.encoding1 = encoding1
+            self.encoding2 = encoding2
+            self.when_rotated_clockwise = lambda : None
+            self.when_rotated_counter_clockwise = lambda : None
 import configparser
 from PIL import Image
 
@@ -82,17 +96,19 @@ def main():
                 }
 
     app_list = [main_screen.MainScreen(config, modules, callbacks),
-                notion_v2.NotionScreen(config, modules, callbacks),
-                weather.WeatherScreen(config, modules, callbacks),
-                subcount.SubcountScreen(config, modules, callbacks),
+                # notion_v2.NotionScreen(config, modules, callbacks),
+                # weather.WeatherScreen(config, modules, callbacks),
+                # subcount.SubcountScreen(config, modules, callbacks),
                 gif_viewer.GifScreen(config, modules, callbacks),
-                life.GameOfLifeScreen(config, modules, callbacks),
-                spotify_player.SpotifyScreen(config, modules, callbacks)]
+                life.GameOfLifeScreen(config, modules, callbacks)]
 
     currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
     parentdir = os.path.dirname(currentdir)
     sys.path.append(parentdir+"/rpi-rgb-led-matrix/bindings/python")
-    from rgbmatrix import RGBMatrix, RGBMatrixOptions
+    try:
+        from rgbmatrix import RGBMatrix, RGBMatrixOptions
+    except ImportError:
+        from RGBMatrixEmulator import RGBMatrix, RGBMatrixOptions
 
     options = RGBMatrixOptions()
     options.rows = 32
@@ -108,6 +124,7 @@ def main():
     options.drop_privileges = False
     matrix = RGBMatrix(options = options)
 
+    rotation_time = math.floor(time.time())
     while(True):
         while (not encoderQueue.empty()):
             encoder_state += encoderQueue.get()
@@ -125,23 +142,11 @@ def main():
 
         isHorizontalSnapshot = copy.copy(isHorizontalDict['value'])
 
-        while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
-            cmd = sys.stdin.readline()
-            if cmd:
-                print("detected: " + cmd)
-                if cmd == 'SP\n':
-                    inputStatusSnapshot = InputStatusEnum.SINGLE_PRESS
-                elif cmd == 'DP\n':
-                    inputStatusSnapshot = InputStatusEnum.DOUBLE_PRESS
-                elif cmd == 'TP\n':
-                    inputStatusSnapshot = InputStatusEnum.TRIPLE_PRESS
-                elif cmd == 'LP\n':
-                    inputStatusSnapshot = InputStatusEnum.LONG_PRESS
-                elif cmd == 'EI\n':
-                    inputStatusSnapshot = InputStatusEnum.ENCODER_INCREASE
-                elif cmd == 'ED\n':
-                    inputStatusSnapshot = InputStatusEnum.ENCODER_DECREASE
-
+        new_rotation_time = math.floor(time.time())
+        if new_rotation_time % 10 == 0 and new_rotation_time - rotation_time >= 10:
+            current_app_idx += 1
+            rotation_time = new_rotation_time
+        
         frame = app_list[current_app_idx % len(app_list)].generate(isHorizontalSnapshot, inputStatusSnapshot)
         if not displayOn:
             frame = black_screen

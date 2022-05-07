@@ -10,11 +10,11 @@ class NotificationModule:
         app_white_list = parseWhiteList(config.get('Notification Module', 'white_list', fallback=None))
         pushbullet_ws = config.get('Notification Module', 'pushbullet_ws', fallback=None)
 
+        self.noti_list = []
+        self.noti_queue = Queue()
         if pushbullet_ws is None or app_white_list is None or len(app_white_list) == 0:
             print("[Notification Module] pushbullet websocket url or app white list is not specified in config")
         else:
-            self.noti_list = []
-            self.noti_queue = Queue()
             Thread(target = startService, args=(self.noti_queue, pushbullet_ws, app_white_list,)).start()
     
     def getNotificationList(self):
